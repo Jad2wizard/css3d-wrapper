@@ -1,0 +1,47 @@
+{
+  "name": "css3d-wrapper",
+  "version": "0.1.0",
+  "description": "a react component which can set 3D effects on children components",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jad2wizard/css3d-wrapper.git"
+  },
+  "keywords": [
+    "css3d",
+    "transform",
+    "react"
+  ],
+  "author": "Jad2Wizard",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Jad2wizard/css3d-wrapper/issues"
+  },
+  "homepage": "https://github.com/Jad2wizard/css3d-wrapper#readme",
+  "devDependencies": {
+    "babel-core": "6.24.1",
+    "babel-loader": "7.0.0",
+    "babel-plugin-transform-decorators-legacy": "1.3.4",
+    "babel-plugin-transform-object-rest-spread": "6.23.0",
+    "babel-plugin-transform-runtime": "6.23.0",
+    "babel-preset-es2015": "6.24.1",
+    "babel-preset-react": "6.24.1",
+    "babel-preset-stage-1": "6.24.1",
+    "css-loader": "0.28.11",
+    "mathjs": "4.1.0",
+    "node-sass": "4.8.3",
+    "num2chinese": "^1.0.3",
+    "postcss-loader": "2.1.3",
+    "react": "15.5.4",
+    "react-dom": "15.5.4",
+    "sass-loader": "6.0.7",
+    "style-loader": "0.20.3",
+    "tween.js": "^16.6.0",
+    "url-loader": "1.0.1",
+    "webpack": "2.5.1"
+  }
+}
