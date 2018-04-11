@@ -2,13 +2,30 @@
  * Created by Jad_PC on 2018/4/11.
  */
 import React from 'react';
-import ReactDOM from 'react-dom';
 import * as TWEEN from 'tween.js';
 import math from 'mathjs';
 import styles from './index.scss';
 import {eventOnElement} from './utils';
 
-class CSS3D extends React.Component{
+const cards = [
+    {title: '张一'},
+    {title: '张二'},
+    {title: '张三'},
+    {title: '张四'},
+    {title: '张五'},
+    {title: '张六'},
+    {title: '张七'},
+    {title: '张八'},
+    {title: '张九'},
+    {title: '张十'},
+    {title: '张十一'},
+    {title: '张十二'},
+    {title: '张十三'},
+    {title: '张十四'},
+    {title: '张十五'}
+];
+
+export class CSS3D extends React.Component{
     constructor(props){
         super(props);
         this.camera = null;
@@ -18,31 +35,36 @@ class CSS3D extends React.Component{
         this.cameraRotateX = 0; //camera 在 X 轴上的旋转角度
         this.cameraRotateY = 0; //camera 在 Y 轴上的旋转角度
         this.cameraRotateZ = 0; //camera 在 Z 轴上的旋转角度
-        this.cards = []; //卡片数组，用于存放卡片的 dom 元素以及卡片的 matrix3d 数组
-        this.dragCard = null; //当前正在被拖拽的卡片
-        this.focusCard = null; //当前点击的卡片
+
         this.enableClick = true; //点击鼠标左键后标识是拖拽事件还是点击事件
         this.pause = false;
         window.cards = this.cards;
         window.c = this;
 
+        this.containerWidth = window.innerWidth;
+        this.containerHeight = window.innerHeight;
+        this.cards = []; //卡片数组，用于存放卡片的 dom 元素以及卡片的 matrix3d 数组
+        this.dragCard = null; //当前正在被拖拽的卡片
+        this.focusCard = null; //当前点击的卡片
+        //点击放大卡片的真实变换矩阵 = card.matrix3d * cameraMatrix3d, 设置为显示点击卡片位置变换到容器正中央。需要配合 cameraMatrix3d 计算出 card.matrix3d
+        this.focusMatrix3d = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, this.containerWidth/2, this.containerHeight/2, -2000, 1];
+
         //从three.js camera new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 10000); projectMatrix.elements[5]获取
-        this.cameraMatrix3d = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, window.innerWidth/2, window.innerHeight/2, this.cameraZ, 1];
+        this.cameraMatrix3d = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, this.containerWidth/2, this.containerHeight/2, this.cameraZ, 1];
         this.state = {
-            perspective: 2.7474774194546225 * window.innerHeight / 2
+            perspective: 2.7474774194546225 * this.containerHeight / 2
         };
     }
 
     componentDidMount(){
         const camera = this.camera;
         //根据 CSS3D 组件的父组件宽度和高度调整 camera 位置
-        const width = camera.parentNode.parentNode.clientWidth;
-        const height = camera.parentNode.parentNode.clientHeight;
-        this.state.perspective *= (height / window.innerHeight);
-        this.cameraMatrix3d[12] = width / 2;
-        this.cameraMatrix3d[13] = height / 2;
+        this.containerWidth = camera.parentNode.parentNode.clientWidth;
+        this.containerHeight = camera.parentNode.parentNode.clientHeight;
+        this.cameraMatrix3d[12] = this.containerWidth / 2;
+        this.cameraMatrix3d[13] = this.containerHeight / 2;
         this.setState({
-            perspective: this.state.perspective
+            perspective: 2.7474774194546225 * this.containerHeight / 2
         });
 
         //获取 camera 元素下的子组件，并进行初始化
@@ -54,7 +76,7 @@ class CSS3D extends React.Component{
         document.body.addEventListener('mousedown', this.mousedown, false);
         document.body.addEventListener('wheel', this.mousewheel, false);
 
-        this.transform('grid');
+        this.tweenTransform('grid');
 
         //每帧动画函数
         this.animate();
@@ -74,7 +96,7 @@ class CSS3D extends React.Component{
             if(this.cards.filter(card => card.domElement === dom).length === 0) addCards.push(dom);
         });
         this.initCard(addCards);
-        this.transform('grid');
+        this.tweenTransform('grid');
     }
 
     /**
@@ -93,10 +115,9 @@ class CSS3D extends React.Component{
         //对新添加的 card 的 transform 属性进行初始化
         newCards.forEach((item, index) => {
             let i = index + prevCardsLen;
-            //设置translate(-50%, -50%)是为了让卡片的初始位置位于屏幕正中间
+            //设置translate(-50%, -50%)是为了让卡片的初始位置位于容器正中间
             item.matrix3d = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
-            item.rotateX = 0;
-            item.rotateY = 0;
+            item.lastMatrix3d = null; //记录点击放大的卡片放大前的真实变化矩阵 = matrix3d * cameraMatrix3d
             item.domElement.style.transform = `translate(-50%,-50%) matrix3d(${item.matrix3d.join(',')})`;
             item.grid = {
                 x: (i % 3) * 700 - 700,
@@ -124,27 +145,63 @@ class CSS3D extends React.Component{
      * @param {string} layoutMode | 卡片布局模式
      * @param {number} duration | tween.js 动画持续时长
      */
-    transform = (layoutMode, duration = 1000) => {
-        if(layoutMode){
+    tweenTransform = (layoutMode, duration = 1500) => {
+        if(layoutMode) {
             TWEEN.removeAll();
-            this.cards.forEach(card => {
-                if(this.focusCard == card){
-                    new TWEEN.Tween(card.matrix3d).to([1,0,0,0,0,1,0,0,0,0,1,0,0,0,-this.cameraZ/3,1]).easing(TWEEN.Easing.Exponential.InOut).start();
+            if (layoutMode === 'focus') {
+                if(this.focusCard) {
+                    this.cards.forEach(card => {
+                        const {focusMatrix3d, cameraMatrix3d} = this;
+                        let camMat = [cameraMatrix3d.slice(0, 4), cameraMatrix3d.slice(4, 8), cameraMatrix3d.slice(8, 12), cameraMatrix3d.slice(12, 16)];
+                        let cardMat = [card.matrix3d.slice(0,4),card.matrix3d.slice(4,8),card.matrix3d.slice(8,12),card.matrix3d.slice(12,16)]
+                        if(card === this.focusCard){
+                            card.lastMatrix3d = math.chain(cardMat).multiply(camMat).valueOf().reduce((a,b) => a.concat(b));
+                            let matrix3d = math.chain([focusMatrix3d.slice(0, 4), focusMatrix3d.slice(4, 8), focusMatrix3d.slice(8, 12), focusMatrix3d.slice(12, 16), ])
+                                .multiply(math.divide(math.eye(4), math.matrix(camMat)).valueOf())
+                                .valueOf().reduce((a, b) => a.concat(b));
+                            new TWEEN.Tween(card.matrix3d).to(matrix3d).easing(TWEEN.Easing.Exponential.InOut).start();
+                        } else {
+                            if (card.lastMatrix3d) {
+                                let lm = card.lastMatrix3d;
+                                lm = [lm.slice(0,4), lm.slice(4,8), lm.slice(8,12), lm.slice(12,16)];
+                                lm = math.divide(math.matrix(lm), math.matrix(camMat)).valueOf().reduce((a, b) => a.concat(b));
+                                new TWEEN.Tween(card.matrix3d).to(lm).easing(TWEEN.Easing.Exponential.InOut).start();
+                                card.lastMatrix3d = null;
+                            } else {
+                                let m = card.matrix3d;
+                                let originMatrix = math.chain([m.slice(0, 4), m.slice(4, 8), m.slice(8, 12), m.slice(12, 16)])
+                                    .multiply(camMat).valueOf();
+                                if (originMatrix[3][2] > focusMatrix3d[14]) {
+                                    originMatrix[3][2] += focusMatrix3d[14];
+                                    let newCardMatrix = math.divide(math.matrix(originMatrix), math.matrix(camMat)).valueOf().reduce((a, b) => a.concat(b));
+                                    new TWEEN.Tween(card.matrix3d).to(newCardMatrix).easing(TWEEN.Easing.Exponential.InOut).start();
+                                }
+                            }
+                        }
+                    });
+                    this.lastFocusCard = this.focusCard;
                     this.focusCard = null;
-                }else{
+                }
+            } else {
+                this.lastFocusCard = null;
+                this.cards.forEach(card => {
                     let m = card.matrix3d;
                     let t = card[layoutMode] || null;
-                    if(t){
+                    if (t) {
                         new TWEEN.Tween(card.matrix3d)
-                            .to([m[0],m[1],m[2],m[3],
-                                m[4],m[5],m[6],m[7],
-                                m[8],m[9],m[10],m[11],
-                                t.x,t.y,t.z,m[15]], duration)
+                            .to([1, 0, 0, 0,
+                                0, 1, 0, 0,
+                                0, 0, 1, 0,
+                                t.x, t.y, t.z, 1], duration)
                             .easing(TWEEN.Easing.Exponential.InOut)
                             .start();
                     }
-                }
-            });
+                });
+                new TWEEN.Tween(this.cameraMatrix3d)
+                    .to([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, window.innerWidth/2, window.innerHeight/2, this.cameraZ, 1], duration)
+                    .easing(TWEEN.Easing.Exponential.InOut)
+                    .start();
+            }
         }
     };
 
@@ -167,8 +224,10 @@ class CSS3D extends React.Component{
                 this.dragCard.domElement.style.zIndex = 9999;
             }
             //更新 camera 的 transform
-            let cameraStyle = this.camera.style;
-            cameraStyle.transform = cameraStyle.transform.split('matrix3d')[0] + `matrix3d(${this.cameraMatrix3d.join(',')})`;
+            if(this.camera) {
+                let cameraStyle = this.camera.style;
+                cameraStyle.transform = cameraStyle.transform.split('matrix3d')[0] + `matrix3d(${this.cameraMatrix3d.join(',')})`;
+            }
         }
 
         window.requestAnimationFrame(this.animate);
@@ -189,18 +248,17 @@ class CSS3D extends React.Component{
      * @param {Object} event
      */
     mousedown = (event) => {
-        if(event.button === 2) {
-            document.body.addEventListener('mousemove', this.rightMousemove, false);
-        }else if(event.button === 0){
-            let target= eventOnElement(event, styles.card);
-            if(target){
-                event.stopPropagation();
-                this.dragCard = this.cards.filter(c => c.domElement === target)[0] || null;
-                document.body.addEventListener('mousemove', this.leftMousemove, false);
-            }
-        }else if(event.button === 1){
-            document.body.addEventListener('mousemove', this.middleMousemove, false);
+        let card = eventOnElement(event, styles.card);
+        let className = event.target.className;
+        event.preventDefault();
+        event.stopPropagation();
+        if(card){
+            this.dragCard = this.cards.filter(c => c.domElement === card)[0] || null;
+            document.body.addEventListener('mousemove', this.cardMoveHandle, false);
+        } else if(className.includes(styles.container) || className.includes(styles.camera)){
+            document.body.addEventListener('mousemove', this.rotateHandle, false);
         }
+        console.log('add mouse up');
         document.body.addEventListener('mouseup', this.mouseup, false);
     };
 
@@ -208,14 +266,13 @@ class CSS3D extends React.Component{
      * 鼠标滚轮拖拽时，camera 围绕 X轴和 Y轴旋转
      * @param {*} event
      */
-    middleMousemove = (event) => {
+    rotateHandle = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.enableClick = false;
         const {movementX, movementY} = event;
         this.cameraRotateX -= movementY * this.rotateScale;
         this.cameraRotateY += movementX * this.rotateScale;
-        this.cards.forEach(card => {
-            card.rotateX = -this.cameraRotateX;
-            card.rotateY = -this.cameraRotateY;
-        });
         const a = this.cameraRotateX;
         const b = this.cameraRotateY;
         const sinA = Math.sin(a);
@@ -245,9 +302,14 @@ class CSS3D extends React.Component{
         reverseRotateYMatrix[2][0] = -sinB;
         reverseRotateYMatrix[2][2] = cosB;
 
+        console.log('X ')
+        console.log(rotateXMatrix)
+        console.log('Y ')
+        console.log(rotateYMatrix)
         this.cameraMatrix3d = math.chain(rotateXMatrix).multiply(rotateYMatrix)
             .multiply([[1,0,0,0], [0,1,0,0], [0,0,1,0], this.cameraMatrix3d.slice(12, 16)]).valueOf().reduce((a, b) => a.concat(b), []);
 
+        console.log(this.cameraMatrix3d);
         this.cards.forEach(card => {
             //每张卡片为了保持法向量始终朝向屏幕，旋转矩阵应该等于 rotateY(-b) 对应的旋转矩阵乘以 rotateX(-a) 对应的旋转矩阵
             const matrix = card.matrix3d;
@@ -271,15 +333,21 @@ class CSS3D extends React.Component{
      * 鼠标左键拖拽事件回电函数
      * @param {*} event
      */
-    leftMousemove = (event) => {
+    cardMoveHandle = (event) => {
         const {dragCard} = this;
+        const {movementX, movementY} = event;
+        if(Math.abs(movementX) + Math.abs(movementY) < 3) return;
         event.preventDefault();
+        event.stopPropagation();
         if(dragCard){
-            const {movementX, movementY} = event;
             this.enableClick = false;
-            const scale = Math.abs((dragCard.matrix3d[14] + this.cameraMatrix3d[14]) / this.state.perspective);
-            console.log('drag: ', dragCard.matrix3d[14]);
-            console.log('camera: ', this.cameraMatrix3d[14]);
+            const cardMat = dragCard.matrix3d;
+            const camMat = this.cameraMatrix3d;
+            const originMatrix = math.chain([cardMat.slice(0, 4), cardMat.slice(4, 8), cardMat.slice(8, 12), cardMat.slice(12, 16)] )
+                .multiply([camMat.slice(0, 4), camMat.slice(4, 8), camMat.slice(8, 12), camMat.slice(12, 16)])
+                .valueOf().reduce((a, b) => a.concat(b));
+            console.log(originMatrix)
+            const scale = Math.abs((originMatrix[14]) / this.state.perspective);
             const translateMatrix = math.eye(4).valueOf();
             const matrix = dragCard.matrix3d;
             translateMatrix[3][0] = movementX * scale;
@@ -295,20 +363,15 @@ class CSS3D extends React.Component{
      * @param {Object} event
      */
     mouseup = (event) => {
-        if(event.button == 2) {
-            setTimeout(()=>{this.enableClick = true;}, 500);
-            if(this.enableClick) this.clickHandle(event);
-            document.body.removeEventListener('mousemove', this.rightMousemove);
-        }else if(event.button === 0){
-            const {dragCard} = this;
-            document.body.removeEventListener('mousemove', this.leftMousemove);
-            if(dragCard) {
-                dragCard.domElement.style.zIndex = 0;
-                this.dragCard = null;
-            }
-        }else if(event.button === 1){
-            document.body.removeEventListener('mousemove', this.middleMousemove);
+        const {dragCard} = this;
+        if(dragCard) {
+            dragCard.domElement.style.zIndex = 0;
+            this.dragCard = null;
         }
+        if(this.enableClick) this.clickHandle(event);
+        else this.enableClick = true;
+        document.body.removeEventListener('mousemove', this.cardMoveHandle);
+        document.body.removeEventListener('mousemove', this.rotateHandle);
     };
 
     /**
@@ -316,15 +379,25 @@ class CSS3D extends React.Component{
      * @param {*} event
      */
     clickHandle = (event) => {
-        if(!this.enableClick || event.button !== 2) return;
+        if(!this.enableClick) return;
         let target = eventOnElement(event, styles.card);
         if(target){
             this.focusCard = this.cards.filter(c => c.domElement == target)[0] || null;
-            this.transform('overlap');
+            this.tweenTransform('focus');
         }
     };
 
     render(){
+        const children = this.props.children ||
+            cards.map((item, index) => (
+                <div key={index} className={styles.card} style={{width: 600, height: 420}}>
+                    <div className={styles.cardHeader}>
+                        <input type="checkbox" className={styles.checkbox} />
+                        {item.title}
+                    </div>
+                    <div className={styles.cardContent} style={{backgroundColor: `rgb(${Math.random()*255|0}, ${Math.random()*255|0}, ${Math.random()*255|0})`}}></div>
+                </div>
+            ));
         const {cameraMatrix3d,} = this;
         const {perspective} = this.state;
         return (
@@ -336,75 +409,14 @@ class CSS3D extends React.Component{
                     style={{transformOrigin: 'left top',transform: `translateZ(${perspective}px) matrix3d(${cameraMatrix3d.join(',')})`}}
                     ref={e => {this.camera = e;}}
                 >
-                    {this.props.children}
+                    {children}
                 </div>
                 <div className={styles.menu}>
-                    <button id='overlap' onClick={() => {this.transform('overlap');}}>OVERLAP</button>
-                    <button id='grid' onClick={() => {this.transform('grid');}}>GRID</button>
+                    <button id='overlap' onClick={() => {this.tweenTransform('overlap');}}>OVERLAP</button>
+                    <button id='grid' onClick={() => {this.tweenTransform('grid');}}>GRID</button>
                 </div>
             </div>
         );
     }
 }
 
-/**
- * demo of CSS3D
- */
-class Demo extends React.Component{
-    constructor(props){
-        super(props);
-        this.cardWidth = 600;
-        this.cardHeight = 420;
-        this.state = {cards: [
-            {title: '张三'},
-            {title: '张三'},
-            {title: '张三'},
-            {title: '张三'},
-            {title: '张三'},
-            {title: '张三'},
-            {title: '张三'},
-            {title: '张三'},
-            {title: '张三'}
-        ]};
-    }
-
-    componentDidMount(){
-        const nextCards = this.state.cards.concat([
-            {title: '张一'},
-            {title: '张二'},
-            {title: '张三'},
-            {title: '张四'},
-            {title: '张五'}
-        ]);
-        setTimeout(() => {
-            this.setState({
-                cards: nextCards
-            });
-        }, 1500);
-    }
-
-    render(){
-        return (
-            <div style={{position: 'absolute', width: '100%', height: '100%'}}>
-                <CSS3D>
-                    {this.state.cards.map((item, index) => (
-                        <div key={index} className={styles.card} style={{width: this.cardWidth, height: this.cardHeight,}}>
-                            <div className={styles.cardHeader}>
-                                <input type="checkbox" className={styles.checkbox} />
-                                {item.title}
-                            </div>
-                            <div className={styles.cardContent}></div>
-                        </div>)
-                    )}
-                </CSS3D>
-            </div>
-        );
-    }
-}
-
-ReactDOM.render(
-    <Demo/>,
-    document.getElementById('main')
-);
-
-export default CSS3D;

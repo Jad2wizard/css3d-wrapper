@@ -8,6 +8,8 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, 'build'),
         filename: 'bundle.js',
+        library: 'CSS3D',
+        libraryTarget: "umd"
     },
 
     resolve: {
@@ -19,14 +21,14 @@ module.exports = {
                 NODE_ENV: JSON.stringify('production')
             }
         }),
-        new webpack.optimize.UglifyJsPlugin({
-            output: {
-                comments: false
-            },
-            compress: {
-                warnings: false
-            }
-        })
+        // new webpack.optimize.UglifyJsPlugin({
+        //     output: {
+        //         comments: false
+        //     },
+        //     compress: {
+        //         warnings: false
+        //     }
+        // })
     ],
     module: {
         rules: [
@@ -44,5 +46,9 @@ module.exports = {
                 loader: 'url-loader?limit=8192'
             }
         ]
+    },
+    externals:{
+        'react': 'umd react',
+        'react-dom': 'umd react-dom'
     }
 };

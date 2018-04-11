@@ -1,4 +1,3 @@
-$headerHeight: 50px;
 
 .container{
     position: relative;
@@ -24,7 +23,8 @@ $headerHeight: 50px;
     cursor: default;
     .cardContent{
       width: 100%;
-      height: calc(100% - #{$headerHeight});
+      height: calc(100% - 50px);
+      background-color: aqua;
   }
 }
 
@@ -36,8 +36,8 @@ $headerHeight: 50px;
 
 .cardHeader{
     font-size: 40px;
-    height: $headerHeight;
-    line-height: $headerHeight;
+    height: 50px;
+    line-height: 50px;
     color: green;
     text-align: left;
 }
