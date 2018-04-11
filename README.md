@@ -19,7 +19,14 @@
  ```
 ## 3D Effects
 1. rotate the camera around X-axis and Y-axis through dragging by left-mouse-btn
-2. move SubComponent on XY plane through dragging the SubComponent by left-mouse-btn
-3. click SubComponent and transform it to the center of container by left-mouse-btn
-4. support Grid and Overlap layout of SubComponents
-5. in the step above, all the SubComponents' normal vectors are fixed.
+![Alt text](https://github.com/Jad2Wizard/css3d-wrapper/raw/master/screenshots/rotateCamera.png)
+2. translate the camera on Z-axis through mouse-wheel
+![Alt text](https://github.com/Jad2Wizard/css3d-wrapper/raw/master/screenshots/translateCameraZ.png)
+3. move SubComponent on XY plane through dragging the SubComponent by left-mouse-btn
+![Alt text](https://github.com/Jad2Wizard/css3d-wrapper/raw/master/screenshots/move.png)
+4. click SubComponent and transform it to the center of container by left-mouse-btn
+![Alt text](https://github.com/Jad2Wizard/css3d-wrapper/raw/master/screenshots/click.png)
+5. support Grid and Overlap layout of SubComponents
+![Alt text](https://github.com/Jad2Wizard/css3d-wrapper/raw/master/screenshots/grid.png)
+![Alt text](https://github.com/Jad2Wizard/css3d-wrapper/raw/master/screenshots/overlap.png)
+6. in the step above, all the SubComponents' normal vectors are fixed.
