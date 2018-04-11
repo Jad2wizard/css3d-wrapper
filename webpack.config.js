@@ -21,14 +21,14 @@ module.exports = {
                 NODE_ENV: JSON.stringify('production')
             }
         }),
-        // new webpack.optimize.UglifyJsPlugin({
-        //     output: {
-        //         comments: false
-        //     },
-        //     compress: {
-        //         warnings: false
-        //     }
-        // })
+        new webpack.optimize.UglifyJsPlugin({
+            output: {
+                comments: false
+            },
+            compress: {
+                warnings: false
+            }
+        })
     ],
     module: {
         rules: [
@@ -47,8 +47,8 @@ module.exports = {
             }
         ]
     },
-    externals:{
-        'react': 'umd react',
-        'react-dom': 'umd react-dom'
-    }
+    // externals:{
+    //     'react': 'umd react',
+    //     'react-dom': 'umd react-dom'
+    // }
 };

@@ -2,6 +2,7 @@
  * Created by Jad_PC on 2018/4/11.
  */
 import React from 'react';
+import ReactDOM from 'react-dom';
 import * as TWEEN from 'tween.js';
 import math from 'mathjs';
 import styles from './index.scss';
@@ -25,7 +26,7 @@ const cards = [
     {title: '张十五'}
 ];
 
-export class CSS3D extends React.Component{
+export class Css3dWrapper extends React.Component{
     constructor(props){
         super(props);
         this.camera = null;
@@ -398,7 +399,7 @@ export class CSS3D extends React.Component{
                     <div className={styles.cardContent} style={{backgroundColor: `rgb(${Math.random()*255|0}, ${Math.random()*255|0}, ${Math.random()*255|0})`}}></div>
                 </div>
             ));
-        const {cameraMatrix3d,} = this;
+        const {cameraMatrix3d} = this;
         const {perspective} = this.state;
         return (
             <div
@@ -420,3 +421,13 @@ export class CSS3D extends React.Component{
     }
 }
 
+const container = document.getElementById('jad2wizard');
+//如果 <div id='jad2wizard'></div> 存在，则说明当前是在 example.html 文件中引用
+if(container) {
+    container.style.width = window.innerWidth + 'px';
+    container.style.height = window.innerHeight + 'px';
+    ReactDOM.render(
+        <Css3dWrapper/>,
+        document.getElementById('jad2wizard')
+    );
+}

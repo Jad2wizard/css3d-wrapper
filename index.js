@@ -3,4 +3,4 @@
  */
 var CSS3D = require('./build/bundle');
 
-module.exports = CSS3D.CSS3D;
+module.exports = CSS3D.Css3dWrapper;

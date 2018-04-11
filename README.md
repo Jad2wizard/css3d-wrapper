@@ -1,19 +1,21 @@
 # css3d-wrapper
 > a React component which can add 3D effects on the children component, implemented by CSS3 transform
-## Intall
-  npm install css3d-wrapper
-  
+## Intallation
+    npm install css3d-wrapper
+## Example
+    ./build/example.html
+## Use
   ```
   import React from 'react';
-  import CSS3D from 'css3d-wrapper';
+  import Css3dWrapper from 'css3d-wrapper';
   const Demo = () => (
-    <CSS3D>
+    <Css3dWrapper>
       <SubComponent1/>
       <SubComponent2/>
       <SubComponent3/>
       <SubComponent4/>
       <SubComponent5/>
-    </CSS3D>
+    </Css3dWrapper>
   )
   # Demo can add 3D effects on SubComponnet1 ~ SubComponent5.
  ```
