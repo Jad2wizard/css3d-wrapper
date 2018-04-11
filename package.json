@@ -1,6 +1,6 @@
 {
   "name": "css3d-wrapper",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "a react component which can set 3D effects on children components",
   "main": "index.js",
   "scripts": {
