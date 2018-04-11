@@ -179,13 +179,10 @@ export class CSS3D extends React.Component{
                             }
                         }
                     });
-                    this.lastFocusCard = this.focusCard;
                     this.focusCard = null;
                 }
             } else {
-                this.lastFocusCard = null;
                 this.cards.forEach(card => {
-                    let m = card.matrix3d;
                     let t = card[layoutMode] || null;
                     if (t) {
                         new TWEEN.Tween(card.matrix3d)
@@ -197,10 +194,13 @@ export class CSS3D extends React.Component{
                             .start();
                     }
                 });
+                //当用户点击布局按钮后，camera 变换矩阵初始化
                 new TWEEN.Tween(this.cameraMatrix3d)
                     .to([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, window.innerWidth/2, window.innerHeight/2, this.cameraZ, 1], duration)
                     .easing(TWEEN.Easing.Exponential.InOut)
                     .start();
+                this.cameraRotateX = 0;
+                this.cameraRotateY = 0;
             }
         }
     };
