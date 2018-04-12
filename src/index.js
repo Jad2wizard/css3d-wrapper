@@ -157,7 +157,12 @@ export class Css3dWrapper extends React.Component{
                         let cardMat = [card.matrix3d.slice(0,4),card.matrix3d.slice(4,8),card.matrix3d.slice(8,12),card.matrix3d.slice(12,16)]
                         if(card === this.focusCard){
                             card.lastMatrix3d = math.chain(cardMat).multiply(camMat).valueOf().reduce((a,b) => a.concat(b));
-                            let matrix3d = math.chain([focusMatrix3d.slice(0, 4), focusMatrix3d.slice(4, 8), focusMatrix3d.slice(8, 12), focusMatrix3d.slice(12, 16), ])
+                            //被点击选中的子组件的最终变换矩阵为固定的 focusMatrix3d。因为 focusMatrix3d = cardMatrix3d * cameraMatrix3d
+                            //故被点击选中子组件的变换矩阵 cardMatrix3d = focusMatrix3d * cameraReverseMatrix3
+                            let matrix3d = math.chain([focusMatrix3d.slice(0, 4),
+                                focusMatrix3d.slice(4, 8),
+                                focusMatrix3d.slice(8, 12),
+                                focusMatrix3d.slice(12, 16)])
                                 .multiply(math.divide(math.eye(4), math.matrix(camMat)).valueOf())
                                 .valueOf().reduce((a, b) => a.concat(b));
                             new TWEEN.Tween(card.matrix3d).to(matrix3d).easing(TWEEN.Easing.Exponential.InOut).start();
@@ -303,10 +308,6 @@ export class Css3dWrapper extends React.Component{
         reverseRotateYMatrix[2][0] = -sinB;
         reverseRotateYMatrix[2][2] = cosB;
 
-        console.log('X ')
-        console.log(rotateXMatrix)
-        console.log('Y ')
-        console.log(rotateYMatrix)
         this.cameraMatrix3d = math.chain(rotateXMatrix).multiply(rotateYMatrix)
             .multiply([[1,0,0,0], [0,1,0,0], [0,0,1,0], this.cameraMatrix3d.slice(12, 16)]).valueOf().reduce((a, b) => a.concat(b), []);
 
