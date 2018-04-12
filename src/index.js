@@ -150,43 +150,40 @@ export class Css3dWrapper extends React.Component{
         if(layoutMode) {
             TWEEN.removeAll();
             if (layoutMode === 'focus') {
-                if(this.focusCard) {
-                    this.cards.forEach(card => {
-                        const {focusMatrix3d, cameraMatrix3d} = this;
-                        let camMat = [cameraMatrix3d.slice(0, 4), cameraMatrix3d.slice(4, 8), cameraMatrix3d.slice(8, 12), cameraMatrix3d.slice(12, 16)];
-                        let cardMat = [card.matrix3d.slice(0,4),card.matrix3d.slice(4,8),card.matrix3d.slice(8,12),card.matrix3d.slice(12,16)]
-                        if(card === this.focusCard){
-                            card.lastMatrix3d = math.chain(cardMat).multiply(camMat).valueOf().reduce((a,b) => a.concat(b));
-                            //被点击选中的子组件的最终变换矩阵为固定的 focusMatrix3d。因为 focusMatrix3d = cardMatrix3d * cameraMatrix3d
-                            //故被点击选中子组件的变换矩阵 cardMatrix3d = focusMatrix3d * cameraReverseMatrix3
-                            let matrix3d = math.chain([focusMatrix3d.slice(0, 4),
-                                focusMatrix3d.slice(4, 8),
-                                focusMatrix3d.slice(8, 12),
-                                focusMatrix3d.slice(12, 16)])
-                                .multiply(math.divide(math.eye(4), math.matrix(camMat)).valueOf())
-                                .valueOf().reduce((a, b) => a.concat(b));
-                            new TWEEN.Tween(card.matrix3d).to(matrix3d).easing(TWEEN.Easing.Exponential.InOut).start();
+                this.cards.forEach(card => {
+                    const {focusMatrix3d, cameraMatrix3d} = this;
+                    let camMat = [cameraMatrix3d.slice(0, 4), cameraMatrix3d.slice(4, 8), cameraMatrix3d.slice(8, 12), cameraMatrix3d.slice(12, 16)];
+                    let cardMat = [card.matrix3d.slice(0,4),card.matrix3d.slice(4,8),card.matrix3d.slice(8,12),card.matrix3d.slice(12,16)]
+                    if(card === this.focusCard){
+                        card.lastMatrix3d = math.chain(cardMat).multiply(camMat).valueOf().reduce((a,b) => a.concat(b));
+                        //被点击选中的子组件的最终变换矩阵为固定的 focusMatrix3d。因为 focusMatrix3d = cardMatrix3d * cameraMatrix3d
+                        //故被点击选中子组件的变换矩阵 cardMatrix3d = focusMatrix3d * cameraReverseMatrix3
+                        let matrix3d = math.chain([focusMatrix3d.slice(0, 4),
+                            focusMatrix3d.slice(4, 8),
+                            focusMatrix3d.slice(8, 12),
+                            focusMatrix3d.slice(12, 16)])
+                            .multiply(math.divide(math.eye(4), math.matrix(camMat)).valueOf())
+                            .valueOf().reduce((a, b) => a.concat(b));
+                        new TWEEN.Tween(card.matrix3d).to(matrix3d).easing(TWEEN.Easing.Exponential.InOut).start();
+                    } else {
+                        if (card.lastMatrix3d) {
+                            let lm = card.lastMatrix3d;
+                            lm = [lm.slice(0,4), lm.slice(4,8), lm.slice(8,12), lm.slice(12,16)];
+                            lm = math.divide(math.matrix(lm), math.matrix(camMat)).valueOf().reduce((a, b) => a.concat(b));
+                            new TWEEN.Tween(card.matrix3d).to(lm).easing(TWEEN.Easing.Exponential.InOut).start();
+                            card.lastMatrix3d = null;
                         } else {
-                            if (card.lastMatrix3d) {
-                                let lm = card.lastMatrix3d;
-                                lm = [lm.slice(0,4), lm.slice(4,8), lm.slice(8,12), lm.slice(12,16)];
-                                lm = math.divide(math.matrix(lm), math.matrix(camMat)).valueOf().reduce((a, b) => a.concat(b));
-                                new TWEEN.Tween(card.matrix3d).to(lm).easing(TWEEN.Easing.Exponential.InOut).start();
-                                card.lastMatrix3d = null;
-                            } else {
-                                let m = card.matrix3d;
-                                let originMatrix = math.chain([m.slice(0, 4), m.slice(4, 8), m.slice(8, 12), m.slice(12, 16)])
-                                    .multiply(camMat).valueOf();
-                                if (originMatrix[3][2] > focusMatrix3d[14]) {
-                                    originMatrix[3][2] += focusMatrix3d[14];
-                                    let newCardMatrix = math.divide(math.matrix(originMatrix), math.matrix(camMat)).valueOf().reduce((a, b) => a.concat(b));
-                                    new TWEEN.Tween(card.matrix3d).to(newCardMatrix).easing(TWEEN.Easing.Exponential.InOut).start();
-                                }
+                            let m = card.matrix3d;
+                            let originMatrix = math.chain([m.slice(0, 4), m.slice(4, 8), m.slice(8, 12), m.slice(12, 16)])
+                                .multiply(camMat).valueOf();
+                            if (originMatrix[3][2] > focusMatrix3d[14]) {
+                                originMatrix[3][2] += focusMatrix3d[14];
+                                let newCardMatrix = math.divide(math.matrix(originMatrix), math.matrix(camMat)).valueOf().reduce((a, b) => a.concat(b));
+                                new TWEEN.Tween(card.matrix3d).to(newCardMatrix).easing(TWEEN.Easing.Exponential.InOut).start();
                             }
                         }
-                    });
-                    this.focusCard = null;
-                }
+                    }
+                });
             } else {
                 this.cards.forEach(card => {
                     let t = card[layoutMode] || null;
@@ -264,7 +261,6 @@ export class Css3dWrapper extends React.Component{
         } else if(className.includes(styles.container) || className.includes(styles.camera)){
             document.body.addEventListener('mousemove', this.rotateHandle, false);
         }
-        console.log('add mouse up');
         document.body.addEventListener('mouseup', this.mouseup, false);
     };
 
@@ -311,7 +307,6 @@ export class Css3dWrapper extends React.Component{
         this.cameraMatrix3d = math.chain(rotateXMatrix).multiply(rotateYMatrix)
             .multiply([[1,0,0,0], [0,1,0,0], [0,0,1,0], this.cameraMatrix3d.slice(12, 16)]).valueOf().reduce((a, b) => a.concat(b), []);
 
-        console.log(this.cameraMatrix3d);
         this.cards.forEach(card => {
             //每张卡片为了保持法向量始终朝向屏幕，旋转矩阵应该等于 rotateY(-b) 对应的旋转矩阵乘以 rotateX(-a) 对应的旋转矩阵
             const matrix = card.matrix3d;
@@ -348,7 +343,6 @@ export class Css3dWrapper extends React.Component{
             const originMatrix = math.chain([cardMat.slice(0, 4), cardMat.slice(4, 8), cardMat.slice(8, 12), cardMat.slice(12, 16)] )
                 .multiply([camMat.slice(0, 4), camMat.slice(4, 8), camMat.slice(8, 12), camMat.slice(12, 16)])
                 .valueOf().reduce((a, b) => a.concat(b));
-            console.log(originMatrix)
             const scale = Math.abs((originMatrix[14]) / this.state.perspective);
             const translateMatrix = math.eye(4).valueOf();
             const matrix = dragCard.matrix3d;
@@ -384,8 +378,12 @@ export class Css3dWrapper extends React.Component{
         if(!this.enableClick) return;
         let target = eventOnElement(event, styles.card);
         if(target){
-            this.focusCard = this.cards.filter(c => c.domElement == target)[0] || null;
-            this.tweenTransform('focus');
+            if(this.focusCard && this.focusCard.domElement === target){
+                this.focusCard = null;
+            } else {
+                this.focusCard = this.cards.filter(c => c.domElement == target)[0] || null;
+            }
+            this.tweenTransform('focus', 750);
         }
     };
 
